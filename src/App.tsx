@@ -1153,7 +1153,8 @@ export default function App() {
                   key={marker.id}
                   style={{ "--marker-color": marker.color } as React.CSSProperties}
                   onClick={() => toggleMarker(marker.id)}
-                  title={marker.meaning}
+                  aria-pressed={active}
+                  title={active ? `${marker.meaning}. Нажмите еще раз, чтобы убрать.` : `${marker.meaning}. Нажмите, чтобы добавить.`}
                 >
                   <Icon size={14} strokeWidth={2.4} />
                   <span>{marker.label}</span>
