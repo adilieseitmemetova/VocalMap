@@ -47,13 +47,19 @@ Created storage bucket:
 
 Every application table has Row Level Security enabled. Policies restrict users to their own rows, except system markers, which authenticated users can read. Storage policies restrict audio objects to authenticated owners inside their own user folder.
 
-For email code auth, configure the Supabase Auth email template to include the one-time token:
+For email code auth with automatic login and registration, configure the Supabase Auth email
+templates to include the one-time token:
 
 ```text
 {{ .Token }}
 ```
 
-If the template uses `{{ .ConfirmationURL }}`, Supabase sends an email link instead of the code expected by this UI.
+Use the **Magic Link / OTP** template for returning users and the **Confirm signup** template for
+new users. Remove `{{ .ConfirmationURL }}`, `{{ .TokenHash }}`, and direct `/auth/v1/verify` links
+from auth emails, because email prefetchers can open those links and consume the one-time token
+before the user enters the code. Set **Authentication > Providers > Email > Email OTP Expiration**
+to a practical value such as `300` or `3600` seconds. The sign-in form accepts Supabase email OTP
+lengths from 6 to 10 digits.
 
 ## Development
 

@@ -11,9 +11,11 @@ export default async function LoginPage() {
     getTranslations("common"),
     createClient()
   ]);
-  const { data } = await supabase.auth.getClaims();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
 
-  if (data?.claims) {
+  if (user) {
     redirect("/dashboard");
   }
 

@@ -8,7 +8,8 @@ import { useMemo, useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const codePattern = /^\d{6}$/;
+const codePattern = /^\d{6,10}$/;
+const maxCodeLength = 10;
 
 type AuthStep = "email" | "code";
 type AuthStatus = "idle" | "sending" | "sent" | "verifying" | "error";
@@ -31,7 +32,13 @@ function getEmailCodeErrorMessageKey(error: unknown): EmailCodeErrorMessageKey {
     return "codeRateLimitError";
   }
 
-  if (message.includes("not authorized") || code.includes("not_authorized")) {
+  if (
+    status === 422 ||
+    code.includes("otp_disabled") ||
+    code.includes("not_authorized") ||
+    message.includes("not authorized") ||
+    message.includes("signups not allowed")
+  ) {
     return "codeUnauthorizedEmailError";
   }
 
@@ -42,15 +49,16 @@ function getEmailCodeErrorMessageKey(error: unknown): EmailCodeErrorMessageKey {
   return "codeSendError";
 }
 
-function logAuthError(error: unknown) {
+function logAuthError(operation: string, error: unknown, context?: Record<string, string>) {
   if (process.env.NODE_ENV !== "development") {
     return;
   }
 
   const maybeError = error as { code?: string; message?: string; name?: string; status?: number };
   // Keep email addresses and keys out of logs; Supabase Auth logs have request-level detail.
-  console.warn("Supabase signInWithOtp failed", {
+  console.warn(`Supabase ${operation} failed`, {
     code: maybeError.code,
+    context,
     message: maybeError.message,
     name: maybeError.name,
     status: maybeError.status
@@ -83,7 +91,7 @@ export function EmailCodeForm() {
     });
 
     if (error) {
-      logAuthError(error);
+      logAuthError("signInWithOtp", error);
       setStatus("error");
       setMessage(t(getEmailCodeErrorMessageKey(error)));
       return;
@@ -129,6 +137,7 @@ export function EmailCodeForm() {
     });
 
     if (error) {
+      logAuthError("verifyOtp", error, { type: "email" });
       setStatus("error");
       setMessage(t("codeVerifyError"));
       return;
@@ -139,7 +148,7 @@ export function EmailCodeForm() {
   }
 
   function handleCodeChange(value: string) {
-    setCode(value.replace(/\D/g, "").slice(0, 6));
+    setCode(value.replace(/\D/g, "").slice(0, maxCodeLength));
   }
 
   function changeEmail() {

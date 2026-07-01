@@ -66,9 +66,9 @@ async function getSpotifyToken() {
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
-  const { data: authData } = await supabase.auth.getClaims();
+  const { data: authData, error: authError } = await supabase.auth.getUser();
 
-  if (!authData?.claims) {
+  if (authError || !authData.user) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
@@ -77,6 +77,10 @@ export async function GET(request: NextRequest) {
 
   if (!query) {
     return NextResponse.json({ error: "Enter a song title or artist." }, { status: 400 });
+  }
+
+  if (query.length > 120) {
+    return NextResponse.json({ error: "Search query is too long." }, { status: 400 });
   }
 
   try {
@@ -126,6 +130,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("Spotify search failed", error);
+    return NextResponse.json({ error: "Spotify search is unavailable." }, { status: 500 });
   }
 }

@@ -24,11 +24,13 @@ export async function updateSession(request: NextRequest) {
     }
   });
 
-  const { data } = await supabase.auth.getClaims();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute = pathname.startsWith("/dashboard");
 
-  if (!data?.claims && isProtectedRoute) {
+  if (!user && isProtectedRoute) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", pathname);
